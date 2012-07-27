@@ -1,11 +1,12 @@
 module ActiveAdmin
   module Mongoid
-    module Adaptor
+    module Adapter
       class Search
         attr_reader :base, :query, :query_hash, :search_params
 
         def initialize(object, search_params = {})
           @base = object
+          @search_params = search_params
           @query = @base.where(build_query(search_params))
         end
 
@@ -14,17 +15,13 @@ module ActiveAdmin
         end
 
         def method_missing(method_id, *args, &block)
-          if is_query(method_id)
-            @search_params[method_id.to_s]
-          else
-            @query.send(method_id, *args, &block)
-          end
+          is_available?(method_id) ? @search_params[method_id] : @query.send(method_id, *args, &block)
         end
 
         private
 
-        def available_methods
-          %w(gte lte gt lt eq ne contains)
+        def is_available?(method_id)
+          method_id.to_s =~ /_(gte?|lte?|eq|ne|contains)\Z/
         end
 
         def build_query(search_params)
@@ -36,10 +33,13 @@ module ActiveAdmin
 
               case $2
               when 'contains'
-                query.merge!(method => Regexp.new(Regexp.escape("#{value}"), Regexp::IGNORECASE))
+                query.merge!(method => Regexp.new(Regexp.escape(v), Regexp::IGNORECASE))
 
-              when /\A(lte?|gte?|eq)\Z/
-                query.merge!(method.send($1) => value)
+              when 'eq'
+                query.merge!(method => k.to_i)
+
+              when /\A(lte?|gte?)\Z/
+                query.merge!(method.send($1) => k)
 
               else
                 raise "unhandled conditional operator: #{$2}"
