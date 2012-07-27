@@ -31,19 +31,17 @@ module ActiveAdmin
             when /\A(.*)_([^_]+)\Z/
               field, operator = [$1, $2].map!(&:to_sym)
 
-              case operator.to_sym
+              q = case operator
               when :contains
-                query.merge!(field => Regexp.new(Regexp.escape(value), Regexp::IGNORECASE))
-
-              when :eq, :in
-                query.merge!(field => value)
-
-              when :lt, :lte, :gt, :gte
-                query.merge!(field.send($1) => value)
-
+                {field => Regexp.new(Regexp.escape(value), Regexp::IGNORECASE)}
+              when :eq
+                {field => value}
+              when :lt, :lte, :gt, :gte, :in
+                {field.send(operator) => value}
               else
                 raise "Unhandled conditional operator: #{operator}"
               end
+              query.merge! q
             end
           end
           query
