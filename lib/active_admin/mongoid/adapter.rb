@@ -21,28 +21,28 @@ module ActiveAdmin
         private
 
         def is_available?(method_id)
-          method_id.to_s =~ /_(gte?|lte?|eq|ne|contains)\Z/
+          method_id.to_s =~ /_(gte?|lte?|eq|ne|in|contains)\Z/
         end
 
         def build_query(search_params)
           query = {}
-          search_params.each do |k, v|
-            case k.to_s
+          search_params.each do |key, value|
+            case key.to_s
             when /\A(.*)_([^_]+)\Z/
-              method = $1.to_sym
+              field, operator = [$1, $2].map!(&:to_sym)
 
-              case $2
-              when 'contains'
-                query.merge!(method => Regexp.new(Regexp.escape(v), Regexp::IGNORECASE))
+              case operator.to_sym
+              when :contains
+                query.merge!(field => Regexp.new(Regexp.escape(value), Regexp::IGNORECASE))
 
-              when 'eq'
-                query.merge!(method => k.to_i)
+              when :eq, :in
+                query.merge!(field => value)
 
-              when /\A(lte?|gte?)\Z/
-                query.merge!(method.send($1) => k)
+              when :lt, :lte, :gt, :gte
+                query.merge!(field.send($1) => value)
 
               else
-                raise "unhandled conditional operator: #{$2}"
+                raise "Unhandled conditional operator: #{operator}"
               end
             end
           end
