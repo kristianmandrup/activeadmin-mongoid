@@ -6,9 +6,7 @@ module ActiveAdmin
 
         def initialize(object, search_params = {})
           @base = object
-          @search_params = search_params
-          @query_hash = get_query_hash(search_params)
-          @query = @base.where(@query_hash)
+          @query = @base.where(build_query(search_params))
         end
 
         def respond_to?(method_id)
@@ -25,28 +23,32 @@ module ActiveAdmin
 
         private
 
-        def is_query(method_id)
-          method_id.to_s =~ /_contains$/
+        def available_methods
+          %w(gte lte gt lt eq ne contains)
         end
 
-        def get_query_hash(search_params)
-          searches = search_params.map do|k, v|
-            mongoidify_search(k,v)
+        def build_query(search_params)
+          query = {}
+          search_params.each do |k, v|
+            case k.to_s
+            when /\A(.*)_([^_]+)\Z/
+              method = $1.to_sym
+
+              case $2
+              when 'contains'
+                query.merge!(method => Regexp.new(Regexp.escape("#{value}"), Regexp::IGNORECASE))
+
+              when /\A(lte?|gte?|eq)\Z/
+                query.merge!(method.send($1) => value)
+
+              else
+                raise "unhandled conditional operator: #{$2}"
+              end
+            end
           end
-          Hash[searches]
+          query
         end
 
-        def mongoidify_search(k, v)
-          if k =~ /_contains$/
-            [get_attribute(k), Regexp.new(Regexp.escape("#{v}"), Regexp::IGNORECASE)]
-          else
-            [k, v]
-          end
-        end
-
-        def get_attribute(k)
-          k.match(/^(.*)_contains$/)[1]
-        end
       end
     end
   end
