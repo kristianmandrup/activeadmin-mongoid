@@ -15,7 +15,7 @@ module ActiveAdmin
         end
 
         def method_missing(method_id, *args, &block)
-          is_available?(method_id) ? @search_params[method_id] : @query.send(method_id, *args, &block)
+          is_available?(method_id) ? @search_params[method_id.to_s] : @query.send(method_id, *args, &block)
         end
 
         private

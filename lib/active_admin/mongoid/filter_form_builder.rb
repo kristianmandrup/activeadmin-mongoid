@@ -3,17 +3,17 @@ class ActiveAdmin::FilterFormBuilder
     if column = column_for(method)
       case column.type.name.downcase.to_sym
       when :date, :datetime
-        return :date_range
+        :date_range
       when :string, :text
-        return :string
+        :string
       when :integer
         return :select if reflection_for(method.to_s.gsub('_id','').to_sym)
-        return :numeric
+        :numeric
       when :float, :decimal
-        return :numeric
+        :numeric
       end
     else # dirty but allows to create filters for hashes
-      return :string
+      :string
     end
   end
 
