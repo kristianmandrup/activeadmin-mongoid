@@ -8,14 +8,14 @@ class ActiveAdmin::FilterFormBuilder
         return :string
       when :integer
         return :select if reflection_for(method.to_s.gsub('_id','').to_sym)
-        return :numeric
+        :numeric
       when :float, :decimal
-        return :numeric
+        :numeric
       end
     elsif is_association?(method)
       return :select
     else # dirty but allows to create filters for hashes
-      return :string
+      :string
     end
   end
 
